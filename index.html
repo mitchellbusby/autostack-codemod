@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Step Highlighter</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #2d2d2d;
+      color: #ccc;
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+    pre {
+      position: relative;
+      font-size: 1.1rem;
+    }
+    code span.highlight {
+      background-color: #44475a;
+      border-left: 4px solid #50fa7b;
+      display: block;
+      padding-left: 0.5em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Code Step Highlighter</h1>
+  <p>Press the <strong>space bar</strong> to step forward, or <strong>Shift + Space</strong> to go back.</p>
+
+  <pre><code class="language-javascript" id="code-block"></code></pre>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const codeBlock = document.getElementById('code-block');
+
+      const codeLines = [
+        '// Step 1',
+        'function greet(name) {',
+        '  const message = `Hello, ${name}!`;',
+        '  console.log(message);',
+        '}',
+        "greet('World');"
+      ];
+
+      codeBlock.innerHTML = codeLines.map((line, i) => {
+        const isStep = i !== 0 && i !== 4;
+        const cls = isStep ? 'step' : '';
+        const highlighted = Prism.highlight(line, Prism.languages.javascript, 'javascript');
+        return `<span class="${cls}">${highlighted}</span>`;
+      }).join('\n');
+
+      const steps = () => document.querySelectorAll('#code-block .step');
+      let currentStep = -1;
+
+      function highlightStep(step) {
+        steps().forEach((el, i) => {
+          el.classList.toggle('highlight', i === step);
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            currentStep = (currentStep - 1 + steps().length) % steps().length;
+          } else {
+            currentStep = (currentStep + 1) % steps().length;
+          }
+          highlightStep(currentStep);
+        }
+      });
+
+      highlightStep(currentStep);
+    });
+  </script>
+</body>
+</html>
