@@ -23,7 +23,14 @@
       padding-left: 0.5em;
     }
     code span.line {
-      display: block;
+      display: flex;
+    }
+    code span.line-number {
+      width: 2em;
+      text-align: right;
+      margin-right: 1em;
+      color: #666;
+      user-select: none;
     }
   </style>
 </head>
@@ -59,6 +66,7 @@
         '',
         '  let fixedProps = false;',
         '',
+        '',
         '  root',
         '    .find(j.JSXElement, {',
         '      openingElement: {',
@@ -67,13 +75,14 @@
         '      },',
         '    })',
         '    .forEach((path) => {',
-        '      // If autoStack is missing, set it to false',
         '      const autoStackAttribute = path.node.openingElement.attributes.find((attr) => attr.name?.name === "autoStack");',
         '      if (!autoStackAttribute) {',
-        '        console.log(`Missing autostack in ${file.path}, fixing it`);',
-        '        path.node.openingElement.attributes.push(',
-        '          j.jsxAttribute(j.jsxIdentifier("autoStack"), j.jsxExpressionContainer(j.booleanLiteral(false))),',
+        '        const newAutoStackAttr = j.jsxAttribute(',
+        '          j.jsxIdentifier("autoStack"),',
+        '          j.jsxExpressionContainer(j.booleanLiteral(false))',
         '        );',
+        '        console.log(`Missing autostack in ${file.path}, fixing it`);',
+        '        path.node.openingElement.attributes.push(newAutoStackAttr);',
         '        fixedProps = true;',
         '      }',
         '    });',
@@ -87,23 +96,32 @@
       ];
 
       const stepGroups = [
-        [0, 1, 2, 3],
-        [4],
-        [6, 7, 8, 9],
-        [10, 11, 12],
-        [14, 15],
-        [17],
-        [19, 20, 21, 22, 23, 24],
-        [25, 26, 27, 28, 29, 30],
-        [32, 33],
-        [35]
+        [0, 1, 2, 3],                  // Purpose docstring
+        [4, 6],                       // Top-level declarations
+        [7, 8, 9, 10, 11, 12],        // Filtering out codemod files
+        [24, 25],                     // JSX element search
+        [26, 27],                     // Component name filter
+        [28],                         // Finding autoStack
+        [19, 20, 21],                 // Creating new attribute
+        [29, 30],                     // Adding it + setting flag
+        [33, 34],                     // Conditional return
+        [36]                          // Final root.toSource
       ];
 
       const spanElements = codeLines.map((line, i) => {
         const span = document.createElement('span');
         span.classList.add('line');
         span.dataset.line = i;
-        span.innerHTML = Prism.highlight(line, Prism.languages.javascript, 'javascript');
+
+        const lineNumber = document.createElement('span');
+        lineNumber.classList.add('line-number');
+        lineNumber.textContent = i.toString().padStart(2, ' ');
+
+        const codeContent = document.createElement('span');
+        codeContent.innerHTML = Prism.highlight(line, Prism.languages.javascript, 'javascript');
+
+        span.appendChild(lineNumber);
+        span.appendChild(codeContent);
         return span;
       });
 
