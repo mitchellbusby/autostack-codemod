@@ -22,6 +22,9 @@
       display: block;
       padding-left: 0.5em;
     }
+    code span.line {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -37,37 +40,94 @@
       const codeBlock = document.getElementById('code-block');
 
       const codeLines = [
-        '// Step 1',
-        'function greet(name) {',
-        '  const message = `Hello, ${name}!`;',
-        '  console.log(message);',
-        '}',
-        "greet('World');"
+        '/**',
+        ' * A codemod to add autoStack={false} to existing Popover/OptionMenu/Select/Tooltip usages without',
+        ' * autoStack on them.',
+        ' */',
+        'export const parser = "tsx";',
+        '',
+        'export default function (file, api) {',
+        '  /**',
+        '   * Don\'t try to run over anything in the codemods folder.',
+        '   */',
+        '  if (file.path.includes("codemods")) {',
+        '    return null;',
+        '  }',
+        '',
+        '  const j = api.jscodeshift;',
+        '  const root = j(file.source);',
+        '',
+        '  let fixedProps = false;',
+        '',
+        '  root',
+        '    .find(j.JSXElement, {',
+        '      openingElement: {',
+        '        name: (node) =>',
+        '          node.type === "JSXIdentifier" && ["OptionMenu", "Select", "Tooltip", "Popover"].includes(node.name),',
+        '      },',
+        '    })',
+        '    .forEach((path) => {',
+        '      // If autoStack is missing, set it to false',
+        '      const autoStackAttribute = path.node.openingElement.attributes.find((attr) => attr.name?.name === "autoStack");',
+        '      if (!autoStackAttribute) {',
+        '        console.log(`Missing autostack in ${file.path}, fixing it`);',
+        '        path.node.openingElement.attributes.push(',
+        '          j.jsxAttribute(j.jsxIdentifier("autoStack"), j.jsxExpressionContainer(j.booleanLiteral(false))),',
+        '        );',
+        '        fixedProps = true;',
+        '      }',
+        '    });',
+        '',
+        '  if (!fixedProps) {',
+        '    return null;',
+        '  }',
+        '',
+        '  return root.toSource({ reuseWhitespace: true, wrapColumn: 0 });',
+        '}'
       ];
 
-      codeBlock.innerHTML = codeLines.map((line, i) => {
-        const isStep = i !== 0 && i !== 4;
-        const cls = isStep ? 'step' : '';
-        const highlighted = Prism.highlight(line, Prism.languages.javascript, 'javascript');
-        return `<span class="${cls}">${highlighted}</span>`;
-      }).join('\n');
+      const stepGroups = [
+        [0, 1, 2, 3],
+        [4],
+        [6, 7, 8, 9],
+        [10, 11, 12],
+        [14, 15],
+        [17],
+        [19, 20, 21, 22, 23, 24],
+        [25, 26, 27, 28, 29, 30],
+        [32, 33],
+        [35]
+      ];
 
-      const steps = () => document.querySelectorAll('#code-block .step');
+      const spanElements = codeLines.map((line, i) => {
+        const span = document.createElement('span');
+        span.classList.add('line');
+        span.dataset.line = i;
+        span.innerHTML = Prism.highlight(line, Prism.languages.javascript, 'javascript');
+        return span;
+      });
+
+      spanElements.forEach(span => codeBlock.appendChild(span));
+
       let currentStep = -1;
 
       function highlightStep(step) {
-        steps().forEach((el, i) => {
-          el.classList.toggle('highlight', i === step);
-        });
+        spanElements.forEach(span => span.classList.remove('highlight'));
+        if (stepGroups[step]) {
+          stepGroups[step].forEach(i => {
+            const el = spanElements[i];
+            if (el) el.classList.add('highlight');
+          });
+        }
       }
 
       document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
           e.preventDefault();
           if (e.shiftKey) {
-            currentStep = (currentStep - 1 + steps().length) % steps().length;
+            currentStep = (currentStep - 1 + stepGroups.length) % stepGroups.length;
           } else {
-            currentStep = (currentStep + 1) % steps().length;
+            currentStep = (currentStep + 1) % stepGroups.length;
           }
           highlightStep(currentStep);
         }
