@@ -95,18 +95,29 @@
         '}'
       ];
 
-      const stepGroups = [
-        [0, 1, 2, 3],                  // Purpose docstring
-        [4, 6],                       // Top-level declarations
-        [7, 8, 9, 10, 11, 12],        // Filtering out codemod files
-        [24, 25],                     // JSX element search
-        [26, 27],                     // Component name filter
-        [28],                         // Finding autoStack
-        [19, 20, 21],                 // Creating new attribute
-        [29, 30],                     // Adding it + setting flag
-        [33, 34],                     // Conditional return
-        [36]                          // Final root.toSource
-      ];
+      const stepGroups = expandRanges([
+        [0, 3],    // Purpose docstring
+        [4, 6],    // Top-level declarations
+        [7, 12],   // Filtering out codemod files
+        [14, 17],  // Setting up things
+        [20, 21],  // Find all JSX elements
+        [22, 25],  // Component name filter
+        [28, 28],  // Finding autoStack
+        [30, 33],  // Creating new attribute
+        [34, 36],  // Adding it + setting flag
+        [40, 42],  // Conditional return
+        [44, 44]   // Final root.toSource
+      ]);
+
+      function expandRanges(ranges) {
+        return ranges.map(([start, end]) => {
+          const group = [];
+          for (let i = start; i <= end; i++) {
+            group.push(i);
+          }
+          return group;
+        });
+      }
 
       const spanElements = codeLines.map((line, i) => {
         const span = document.createElement('span');
